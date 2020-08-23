@@ -1,0 +1,56 @@
+global class Batch_SendCaseCloseInfo implements Database.Batchable <sObject>, Database.AllowsCallouts {
+	global String query;
+	
+	global Database.QueryLocator start(Database.BatchableContext BC){
+        if(query == null || query == '')
+            query = 'SELECT Id, CaseNumber, Closed_By__c, Secret_Key__c, IsClosed, ClosedDate, Error_in_Callout__c FROM Case WHERE IsClosed = true AND Secret_Key__c = null AND Closed_By__c != null';
+        return Database.getQueryLocator(query);
+    }
+	
+	global void execute(Database.BatchableContext BC, List<Case> scope){
+		List<Case> listCaseUpdate = new List<Case>();
+		for(Case varC : scope){
+			Map<String, String> mapReqBody = new Map<String, String>();
+			mapReqBody.put('id', varC.Id);
+			mapReqBody.put('agentid', varC.Closed_By__c);
+			Http h = new Http();
+            HttpRequest req = new HttpRequest();
+            req.setMethod('POST');
+            req.setEndpoint('https://nfapihub.herokuapp.com');
+			req.setBody(JSON.serialize(mapReqBody));
+            HttpResponse res = h.send(req);
+			
+			if(res.getStatusCode() == 200){
+				//this means the callout is successful; obtain the secretKey and update in the Case record
+				JSONParser parser = JSON.createParser(res.getBody());
+				while(parser.nextToken() != null){
+					if((parser.getCurrentToken() == JSONToken.FIELD_NAME) && (parser.getText() == 'secretKey')){
+						parser.nextToken();
+						varC.Secret_Key__c = parser.getText();
+						listCaseUpdate.add(varC);
+					}
+				}
+
+			}
+			else if(res.getStatusCode() == 500){
+				//This means that callout has failed; update the record with error details
+				JSONParser parser = JSON.createParser(res.getBody());
+				while(parser.nextToken() != null){
+					if((parser.getCurrentToken() == JSONToken.FIELD_NAME) && (parser.getText() == 'error')){
+						parser.nextToken();
+						varC.Error_in_Callout__c = parser.getText();
+						listCaseUpdate.add(varC);
+					}
+				}
+			}
+		}
+		
+		if(listCaseUpdate.size() > 0)
+			update listCaseUpdate;
+	}
+	
+	global void finish(Database.BatchableContext BC){
+		//Send an email to a specific mailbox notifying them that the current batch process is finished.
+		//can also include information of the number of success and failures (if any)
+	}
+}
