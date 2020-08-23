@@ -1,0 +1,8 @@
+global class Scheduler_Batch_SendCaseCloseInfo implements Schedulable{
+    
+    global void execute(SchedulableContext sc){
+        Batch_SendCaseCloseInfo batch = new Batch_SendCaseCloseInfo();
+        Id batchId = Database.executeBatch(batch, 200);
+        system.debug('ID of batch executed-->>' + batchId);
+    }
+}
