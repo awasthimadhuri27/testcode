@@ -1,0 +1,22 @@
+@isTest
+private class CalloutClassTest {
+     @isTest static void testCallout() {
+        // Set mock callout class 
+        Test.setMock(HttpCalloutMock.class, new MockHttpResponseGenerator());
+        
+        // Call method to test.
+        Test.startTest();
+        Batch_SendCaseCloseInfo  c = new Batch_SendCaseCloseInfo();
+        Database.executeBatch(c);
+        Test.stopTest(); 
+        HttpResponse res = CalloutClass.getInfoFromExternalService();
+        
+        // Verify response received contains fake values
+        String contentType = res.getHeader('Content-Type');
+        System.assert(contentType == 'application/json');
+        String actualValue = res.getBody();
+        String expectedValue = '{"secretkey":"test"}';
+        System.assertEquals(actualValue, expectedValue);
+        System.assertEquals(200, res.getStatusCode());
+    }
+}
