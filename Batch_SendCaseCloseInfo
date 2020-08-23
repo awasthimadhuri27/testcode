@@ -3,7 +3,7 @@ global class Batch_SendCaseCloseInfo implements Database.Batchable <sObject>, Da
 	
 	global Database.QueryLocator start(Database.BatchableContext BC){
         if(query == null || query == '')
-            query = 'SELECT Id, CaseNumber, Closed_By__c, Secret_Key__c, IsClosed, ClosedDate, Error_in_Callout__c FROM Case WHERE IsClosed = true AND Secret_Key__c = null AND Closed_By__c != null';
+            query = 'SELECT Id, CaseNumber, Closed_By__c, Secret_Key__c, IsClosed, ClosedDate, Error_in_Callout__c FROM Case WHERE IsClosed = true AND Secret_Key__c = 'NA' AND Closed_By__c != null';
         return Database.getQueryLocator(query);
     }
 	
